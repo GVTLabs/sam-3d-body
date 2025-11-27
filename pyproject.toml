@@ -46,4 +46,4 @@ dependencies = [
 xtcocotools = ["numpy"]
 
 [tool.setuptools]
-py-modules = ["data","notebook","sam_3d_body","tools"]
+packages = ["data","notebook","sam_3d_body","tools"]
