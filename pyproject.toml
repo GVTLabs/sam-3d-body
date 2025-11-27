@@ -1,5 +1,5 @@
 [project]
-name = "sam-3d-body"
+name = "sam_3d_body"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
