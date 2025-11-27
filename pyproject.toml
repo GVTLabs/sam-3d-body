@@ -10,6 +10,7 @@ dependencies = [
     "black>=25.11.0",
     "chump>=1.6.0",
     "cython>=3.2.1",
+    "detectron2",
     "dill>=0.4.0",
     "einops>=0.8.1",
     "ffmpeg>=1.4",
@@ -21,6 +22,7 @@ dependencies = [
     "joblib>=1.5.2",
     "jsonlines>=4.0.0",
     "loguru>=0.7.3",
+    "moge",
     "networkx==3.2.1",
     "numpy>=2.3.5",
     "opencv-python>=4.11.0.86",
@@ -45,5 +47,6 @@ dependencies = [
 [tool.uv.extra-build-dependencies]
 xtcocotools = ["numpy"]
 
-[tool.setuptools]
-packages = ["data","notebook","sam_3d_body","tools"]
+[tool.uv.sources]
+detectron2 = { git = "https://github.com/facebookresearch/detectron2.git", rev = "a1ce2f9" }
+moge = { git = "https://github.com/microsoft/MoGe.git" }
