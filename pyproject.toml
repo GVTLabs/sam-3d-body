@@ -46,6 +46,7 @@ dependencies = [
 
 [tool.uv.extra-build-dependencies]
 xtcocotools = ["numpy"]
+detectron2 = ["torch"]
 
 [tool.uv.sources]
 detectron2 = { git = "https://github.com/facebookresearch/detectron2.git", rev = "a1ce2f9" }
