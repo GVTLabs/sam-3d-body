@@ -72,6 +72,7 @@ class SAM3DBodyEstimator:
         nms_thr: float = 0.3,
         use_mask: bool = False,
         inference_type: str = "full",
+        device: Optional[str] = None
     ):
         """
         Perform model prediction in top-down format: assuming input is a full image.
@@ -95,6 +96,10 @@ class SAM3DBodyEstimator:
         self.output = None
         self.prev_prompt = []
         torch.cuda.empty_cache()
+        torch.mps.empty_cache()
+
+        if device is None:
+            device = self.device
 
         if type(img) == str:
             img = load_image(img, backend="cv2", image_format="bgr")
@@ -154,10 +159,10 @@ class SAM3DBodyEstimator:
             masks, masks_score = None, None
 
         #################### Construct batch data samples ####################
-        batch = prepare_batch(img, self.transform, boxes, masks, masks_score)
+        batch = prepare_batch(img, self.transform, boxes, masks, masks_score, device=device)
 
         #################### Run model inference on an image ####################
-        batch = recursive_to(batch, "cuda")
+        batch = recursive_to(batch, device)
         self.model._initialize_batch(batch)
 
         # Handle camera intrinsics
@@ -176,6 +181,7 @@ class SAM3DBodyEstimator:
         else:
             cam_int = batch["cam_int"].clone()
 
+        print(f"Running inference on device: {self.device}")
         outputs = self.model.run_inference(
             img,
             batch,
@@ -188,6 +194,7 @@ class SAM3DBodyEstimator:
         else:
             pose_output = outputs
 
+        print(f"Inference complete, converting to CPU...")
         out = pose_output["mhr"]
         out = recursive_to(out, "cpu")
         out = recursive_to(out, "numpy")

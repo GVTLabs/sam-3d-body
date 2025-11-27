@@ -44,8 +44,18 @@ class MHRHead(nn.Module):
         ffn_zero_bias: bool = True,
         mlp_channel_div_factor: int = 8,
         enable_hand_model=False,
+        device: Optional[str] = None,
     ):
         super().__init__()
+
+        if device is None:
+            if torch.mps.is_available():
+                device = "mps"
+            elif torch.cuda.is_available():
+                device = "cuda"
+            else:
+                device = "cpu"
+        self.device = device
 
         self.num_shape_comps = 45
         self.num_scale_comps = 28
@@ -107,17 +117,30 @@ class MHRHead(nn.Module):
         # Load MHR itself
         if MOMENTUM_ENABLED:
             self.mhr = MHR.from_files(
-                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                device=torch.device(self.device),
                 lod=1,
             )
         else:
+            # Use standard JIT model but load to CPU to avoid precision issues on MPS
             self.mhr = torch.jit.load(
                 mhr_model_path,
-                map_location=("cuda" if torch.cuda.is_available() else "cpu"),
+                map_location=torch.device(self.device),
             )
 
         for param in self.mhr.parameters():
             param.requires_grad = False
+
+    def _apply(self, fn):
+        """
+        Override _apply to ensure self.mhr always stays on CPU if on MPS.
+        This handles cases like model.to(device) or model.cuda() moving the whole model.
+        """
+        super()._apply(fn)
+        if self.device == "mps":
+            # Move mhr back to cpu after whatever operation (like .to()) was applied
+            self.mhr.to("cpu")
+
+        return self
 
     def get_zero_pose_init(self, factor=1.0):
         # Initialize pose token with zero-initialized learnable params
@@ -224,9 +247,24 @@ class MHRHead(nn.Module):
             # Zero out non-hand parameters
             model_params[:, self.nonhand_param_idxs] = 0
 
+        # Move inputs to CPU for MHR call if on MPS as double precision is not supported
+        shape_params_maybe_cpu = shape_params.to("cpu") if self.device == "mps" else shape_params
+        model_params_maybe_cpu = model_params.to("cpu") if self.device == "mps" else model_params
+        expr_params_maybe_cpu = expr_params.to("cpu") if expr_params is not None and self.device == "mps" else expr_params
+
+        # Ensure MHR module is on CPU (just in case)
+        if self.device == "mps":
+            self.mhr.to("cpu")
+
         curr_skinned_verts, curr_skel_state = self.mhr(
-            shape_params, model_params, expr_params
+            shape_params_maybe_cpu, model_params_maybe_cpu, expr_params_maybe_cpu
         )
+
+        # Move outputs back to original device
+        if self.device == "mps":
+            curr_skinned_verts = curr_skinned_verts.to(self.device)
+            curr_skel_state = curr_skel_state.to(self.device)
+
         curr_joint_coords, curr_joint_quats, _ = torch.split(
             curr_skel_state, [3, 4, 1], dim=2
         )

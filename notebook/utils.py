@@ -26,7 +26,7 @@ def setup_sam_3d_body(
     detector_path: str = "",
     segmentor_path: str = "",
     fov_path: str = "",
-    device: str = "cuda",
+    device: Optional[str] = None,
 ):
     """
     Set up SAM 3D Body estimator with optional components.
@@ -48,7 +48,12 @@ def setup_sam_3d_body(
 
     # Auto-detect device if not specified
     if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.mps.is_available():
+            device = "mps" # prefer MPS for us, we don't use CUDA locally
+        elif torch.cuda.is_available():
+            device = "cuda"
+        else:
+            device = "cpu"
 
     # Load core model from HuggingFace
     model, model_cfg = load_sam_3d_body_hf(hf_repo_id, device=device)

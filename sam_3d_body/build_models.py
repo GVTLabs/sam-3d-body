@@ -7,7 +7,7 @@ from .utils.config import get_config
 from .utils.checkpoint import load_state_dict
 
 
-def load_sam_3d_body(checkpoint_path: str = "", device: str = "cuda", mhr_path: str = ""):
+def load_sam_3d_body(checkpoint_path: str = "", device: str = "cpu", mhr_path: str = ""):
     print("Loading SAM 3D Body model...")
     
     # Check the current directory, and if not present check the parent dir.
@@ -26,7 +26,7 @@ def load_sam_3d_body(checkpoint_path: str = "", device: str = "cuda", mhr_path: 
     model_cfg.freeze()
 
     # Initialze the model
-    model = SAM3DBody(model_cfg)
+    model = SAM3DBody(model_cfg, device=device)
 
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if "state_dict" in checkpoint:
@@ -48,4 +48,4 @@ def _hf_download(repo_id):
 
 def load_sam_3d_body_hf(repo_id, **kwargs):
     ckpt_path, mhr_path = _hf_download(repo_id)
-    return load_sam_3d_body(checkpoint_path=ckpt_path, mhr_path=mhr_path)
+    return load_sam_3d_body(checkpoint_path=ckpt_path, mhr_path=mhr_path, device=kwargs.get("device"))

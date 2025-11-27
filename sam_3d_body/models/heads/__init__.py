@@ -1,11 +1,12 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+from typing import Optional
 from ..modules import to_2tuple
 from .camera_head import PerspectiveHead
 from .mhr_head import MHRHead
 
 
-def build_head(cfg, head_type="mhr", enable_hand_model=False, default_scale_factor=1.0):
+def build_head(cfg, head_type="mhr", enable_hand_model=False, default_scale_factor=1.0, device: Optional[str] = None):
     if head_type == "mhr":
         return MHRHead(
             input_dim=cfg.MODEL.DECODER.DIM,
@@ -13,6 +14,7 @@ def build_head(cfg, head_type="mhr", enable_hand_model=False, default_scale_fact
             mhr_model_path=cfg.MODEL.MHR_HEAD.MHR_MODEL_PATH,
             mlp_channel_div_factor=cfg.MODEL.MHR_HEAD.get("MLP_CHANNEL_DIV_FACTOR", 1),
             enable_hand_model=enable_hand_model,
+            device=device,
         )
     elif head_type == "perspective":
         return PerspectiveHead(

@@ -17,6 +17,7 @@ def prepare_batch(
     masks=None,
     masks_score=None,
     cam_int=None,
+    device=None,
 ):
     """A helper function to prepare data batch for SAM 3D Body model inference."""
     height, width = img.shape[:2]
@@ -42,6 +43,15 @@ def prepare_batch(
 
     batch = default_collate(data_list)
 
+
+    if device == "mps":
+        # convert float64 to float32 for MPS compatibility 
+        for key, value in batch.items():
+            if isinstance(value, np.ndarray) and value.dtype == np.float64:
+                batch[key] = value.astype(np.float32)
+            elif isinstance(value, torch.Tensor) and value.dtype == torch.float64:
+                batch[key] = value.to(torch.float32)
+    
     max_num_person = batch["img"].shape[0]
     for key in [
         "img",
@@ -72,6 +82,7 @@ def prepare_batch(
                     [0, 0, 1],
                 ]
             ],
+            dtype=torch.float32,
         ).to(batch["img"])
 
     batch["img_ori"] = [NoCollate(img)]
