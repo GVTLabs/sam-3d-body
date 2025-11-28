@@ -95,8 +95,10 @@ class SAM3DBodyEstimator:
         self.image_embeddings = None
         self.output = None
         self.prev_prompt = []
-        torch.cuda.empty_cache()
-        torch.mps.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        if torch.mps.is_available():
+            torch.mps.empty_cache()
 
         if device is None:
             device = self.device
