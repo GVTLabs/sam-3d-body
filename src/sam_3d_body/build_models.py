@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 import os
+from typing import Optional
 import torch
 
 from .models.meta_arch import SAM3DBody
@@ -46,6 +47,13 @@ def _hf_download(repo_id):
     return os.path.join(local_dir, "model.ckpt"), os.path.join(local_dir, "assets", "mhr_model.pt")
 
 
-def load_sam_3d_body_hf(repo_id, **kwargs):
-    ckpt_path, mhr_path = _hf_download(repo_id)
+def load_sam_3d_body_hf(repo_id: Optional[str] = None, local_path: Optional[str] = None, **kwargs):
+    if repo_id is not None:
+        ckpt_path, mhr_path = _hf_download(repo_id)
+    elif local_path is not None:
+        ckpt_path = os.path.join(local_path, "model.ckpt")
+        mhr_path = os.path.join(local_path, "assets", "mhr_model.pt")
+    else:
+        raise ValueError("Either repo_id or local_path must be provided")
+    
     return load_sam_3d_body(checkpoint_path=ckpt_path, mhr_path=mhr_path, device=kwargs.get("device"))
